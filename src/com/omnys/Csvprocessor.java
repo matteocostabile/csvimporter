@@ -9,19 +9,17 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.io.FileOutputStream;
 import java.util.regex.Pattern;
-
+import java.sql.*;
 
 class Csvprocessor{
 
     private String filename;
     private ArrayList<Csvline> lines;
 
-
     Csvprocessor(String filename) {
 
         this.filename = filename;
         this.lines = new ArrayList<Csvline>();
-
 
         File file = new File(filename);
 
@@ -35,7 +33,6 @@ class Csvprocessor{
                 String dati = input.next();
                 String[] colonne = dati.split(",");
 
-
                 String regex = "[a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}";
                 Pattern.compile(regex);
 
@@ -46,12 +43,14 @@ class Csvprocessor{
                 }else {
                     System.out.println("errore!");
                 }
-
-
             }
             input.close();
 
             stampaArray(lines);
+
+            insertLine(lines);
+
+            takeLine();
 
             FileOutputStream risultato = new FileOutputStream("risultato.csv");
             PrintStream stampa = new PrintStream(risultato);
@@ -63,7 +62,6 @@ class Csvprocessor{
             e.printStackTrace();
         }
     }
-
     public static boolean check(String regex, String email){
         if(Pattern.matches(regex, email))
             return true;
@@ -76,4 +74,55 @@ class Csvprocessor{
         }
     }
 
+    public static void insertLine(ArrayList<Csvline> linee){
+        try{
+            for(int i = 0; i < linee.size(); i++) {
+                Csvline linea = linee.get(i);
+
+                Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/csvimporter?useUnicode=true&serverTimezone=UTC", "root", "root");
+
+                //Statement st = conn.createStatement();
+
+                String query = "" + "INSERT INTO csvlines(name, surname, email)" + "VALUES (?, ?, ?)";
+                PreparedStatement preparedStmt = conn.prepareStatement(query);
+                preparedStmt.setString(1, linea.getName());
+                preparedStmt.setString(2, linea.getSurname());
+                preparedStmt.setString(3, linea.getEmail());
+                preparedStmt.executeUpdate();
+
+                //st.executeUpdate("INSERT INTO csvlines(name, surname, email)" + "VALUES ('Luca', 'Costabile', 'costabileluca@gmail.com')");
+
+                conn.close();
+            }
+
+        }catch(Exception e){
+            System.err.println("errore!");
+            System.err.println(e.getMessage());
+        }
+    }
+    public static void takeLine(){
+        try{
+
+            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/csvimporter?useUnicode=true&serverTimezone=UTC", "root", "root");
+            String query = "SELECT * FROM csvlines";
+
+            Statement st = conn.createStatement();
+
+            ResultSet rs = st.executeQuery(query);
+
+            while(rs.next()){
+                int id = rs.getInt("id");
+                String nome = rs.getString("name");
+                String cognome = rs.getString("surname");
+                String email = rs.getString("email");
+
+                System.out.format("%s, %s, %s, %s\n", id, nome, cognome, email);
+            }
+            st.close();
+
+        }catch(Exception e){
+            System.err.println("errore!");
+            System.err.println(e.getMessage());
+        }
+    }
 }
