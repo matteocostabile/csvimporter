@@ -52,6 +52,10 @@ class Csvprocessor{
 
             takeLine();
 
+            updateLine();
+
+            deleteLine();
+
             FileOutputStream risultato = new FileOutputStream("risultato.csv");
             PrintStream stampa = new PrintStream(risultato);
             for(int i = 0; i < lines.size(); i++){
@@ -124,5 +128,64 @@ class Csvprocessor{
             System.err.println("errore!");
             System.err.println(e.getMessage());
         }
+    }
+    public static void updateLine(){
+        try{
+
+            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/csvimporter?useUnicode=true&serverTimezone=UTC", "root", "root");
+            String query = "UPDATE csvlines set name = ? where id = ?";
+
+            PreparedStatement ps = conn.prepareStatement(query);
+            ps.setString(1, "Updated");
+            ps.setInt(2, 1);
+            ps.executeUpdate();
+
+            conn.close();
+
+        }catch(Exception e){
+            System.err.println("errore!");
+            System.err.println(e.getMessage());
+        }
+    }
+    public static void deleteLine(){
+        try{
+            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/csvimporter?useUnicode=true&serverTimezone=UTC", "root", "root");
+            String query = "DELETE from csvlines where id = ?";
+
+            int lastRow = getLastId();
+
+            PreparedStatement ps = conn.prepareStatement(query);
+            ps.setInt(1, lastRow);
+            ps.execute();
+
+            conn.close();
+
+        }catch(Exception e){
+            System.err.println("errore!");
+            System.err.println(e.getMessage());
+        }
+    }
+    public static int getLastId(){
+        int lastRow = 0;
+        try{
+            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/csvimporter?useUnicode=true&serverTimezone=UTC", "root", "root");
+            String query = "SELECT id from csvlines order by id desc limit 1";
+
+            Statement st = conn.createStatement();
+
+            ResultSet rs = st.executeQuery(query);
+
+            while(rs.next()){
+                lastRow = rs.getInt("id");
+
+                //System.out.format("%s\n", lastRow);
+            }
+            st.close();
+
+        }catch(Exception e){
+            System.err.println("errore!");
+            System.err.println(e.getMessage());
+        }
+        return lastRow;
     }
 }
